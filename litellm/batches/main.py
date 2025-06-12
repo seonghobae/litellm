@@ -114,7 +114,11 @@ def create_batch(
         litellm_params = get_litellm_params(**kwargs)
         litellm_logging_obj: LiteLLMLoggingObj = kwargs.get("litellm_logging_obj", None)
         ### TIMEOUT LOGIC ###
-        timeout = optional_params.timeout or kwargs.get("request_timeout", 600) or 600
+        timeout = (
+            optional_params.timeout
+            or kwargs.get("request_timeout", litellm.request_timeout)
+            or litellm.request_timeout
+        )
         litellm_logging_obj.update_environment_variables(
             model=None,
             user=None,
@@ -136,12 +140,12 @@ def create_batch(
             and isinstance(timeout, httpx.Timeout)
             and supports_httpx_timeout(custom_llm_provider) is False
         ):
-            read_timeout = timeout.read or 600
+            read_timeout = timeout.read or litellm.request_timeout
             timeout = read_timeout  # default 10 min timeout
         elif timeout is not None and not isinstance(timeout, httpx.Timeout):
             timeout = float(timeout)  # type: ignore
         elif timeout is None:
-            timeout = 600.0
+            timeout = litellm.request_timeout
 
         _create_batch_request = CreateBatchRequest(
             completion_window=completion_window,
@@ -324,7 +328,11 @@ def retrieve_batch(
         optional_params = GenericLiteLLMParams(**kwargs)
         litellm_logging_obj: LiteLLMLoggingObj = kwargs.get("litellm_logging_obj", None)
         ### TIMEOUT LOGIC ###
-        timeout = optional_params.timeout or kwargs.get("request_timeout", 600) or 600
+        timeout = (
+            optional_params.timeout
+            or kwargs.get("request_timeout", litellm.request_timeout)
+            or litellm.request_timeout
+        )
         litellm_params = get_litellm_params(
             custom_llm_provider=custom_llm_provider,
             **kwargs,
@@ -342,12 +350,12 @@ def retrieve_batch(
             and isinstance(timeout, httpx.Timeout)
             and supports_httpx_timeout(custom_llm_provider) is False
         ):
-            read_timeout = timeout.read or 600
+            read_timeout = timeout.read or litellm.request_timeout
             timeout = read_timeout  # default 10 min timeout
         elif timeout is not None and not isinstance(timeout, httpx.Timeout):
             timeout = float(timeout)  # type: ignore
         elif timeout is None:
-            timeout = 600.0
+            timeout = litellm.request_timeout
 
         _retrieve_batch_request = RetrieveBatchRequest(
             batch_id=batch_id,
@@ -537,7 +545,11 @@ def list_batches(
             or os.getenv("OPENAI_API_KEY")
         )
         ### TIMEOUT LOGIC ###
-        timeout = optional_params.timeout or kwargs.get("request_timeout", 600) or 600
+        timeout = (
+            optional_params.timeout
+            or kwargs.get("request_timeout", litellm.request_timeout)
+            or litellm.request_timeout
+        )
         # set timeout for 10 minutes by default
 
         if (
@@ -545,12 +557,12 @@ def list_batches(
             and isinstance(timeout, httpx.Timeout)
             and supports_httpx_timeout(custom_llm_provider) is False
         ):
-            read_timeout = timeout.read or 600
+            read_timeout = timeout.read or litellm.request_timeout
             timeout = read_timeout  # default 10 min timeout
         elif timeout is not None and not isinstance(timeout, httpx.Timeout):
             timeout = float(timeout)  # type: ignore
         elif timeout is None:
-            timeout = 600.0
+            timeout = litellm.request_timeout
 
         _is_async = kwargs.pop("alist_batches", False) is True
         if custom_llm_provider == "openai":
@@ -689,7 +701,11 @@ def cancel_batch(
             **kwargs,
         )
         ### TIMEOUT LOGIC ###
-        timeout = optional_params.timeout or kwargs.get("request_timeout", 600) or 600
+        timeout = (
+            optional_params.timeout
+            or kwargs.get("request_timeout", litellm.request_timeout)
+            or litellm.request_timeout
+        )
         # set timeout for 10 minutes by default
 
         if (
@@ -697,12 +713,12 @@ def cancel_batch(
             and isinstance(timeout, httpx.Timeout)
             and supports_httpx_timeout(custom_llm_provider) is False
         ):
-            read_timeout = timeout.read or 600
+            read_timeout = timeout.read or litellm.request_timeout
             timeout = read_timeout  # default 10 min timeout
         elif timeout is not None and not isinstance(timeout, httpx.Timeout):
             timeout = float(timeout)  # type: ignore
         elif timeout is None:
-            timeout = 600.0
+            timeout = litellm.request_timeout
 
         _cancel_batch_request = CancelBatchRequest(
             batch_id=batch_id,

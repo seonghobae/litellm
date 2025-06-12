@@ -31,7 +31,7 @@ class VertexFineTuningAPI(VertexLLM):
         super().__init__()
         self.async_handler = get_async_httpx_client(
             llm_provider=litellm.LlmProviders.VERTEX_AI,
-            params={"timeout": 600.0},
+            params={"timeout": litellm.request_timeout},
         )
 
     def convert_response_created_at(self, response: ResponseTuningJob):
@@ -266,7 +266,12 @@ class VertexFineTuningAPI(VertexLLM):
                 headers=headers,
                 request_data=fine_tune_job,
             )
-        sync_handler = HTTPHandler(timeout=httpx.Timeout(timeout=600.0, connect=5.0))
+        sync_handler = HTTPHandler(
+            timeout=httpx.Timeout(
+                timeout=litellm.request_timeout,
+                connect=litellm.connection_timeout,
+            )
+        )
 
         verbose_logger.debug(
             "about to create fine tuning job: %s, request_data: %s",

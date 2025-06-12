@@ -3,6 +3,8 @@ import json
 import time
 from typing import Callable, List, Union
 
+import httpx
+
 import litellm
 from litellm.constants import REPLICATE_POLLING_DELAY_SECONDS
 from litellm.llms.custom_httpx.http_handler import (
@@ -184,7 +186,11 @@ def completion(
 
     ## COMPLETION CALL
     httpx_client = _get_httpx_client(
-        params={"timeout": 600.0},
+        params={
+            "timeout": httpx.Timeout(
+                timeout=litellm.request_timeout, connect=litellm.connection_timeout
+            )
+        },
     )
     response = httpx_client.post(
         url=prediction_url,
@@ -260,7 +266,11 @@ async def async_completion(
     )
     async_handler = get_async_httpx_client(
         llm_provider=litellm.LlmProviders.REPLICATE,
-        params={"timeout": 600.0},
+        params={
+            "timeout": httpx.Timeout(
+                timeout=litellm.request_timeout, connect=litellm.connection_timeout
+            )
+        },
     )
     response = await async_handler.post(
         url=prediction_url, headers=headers, data=json.dumps(input_data)
