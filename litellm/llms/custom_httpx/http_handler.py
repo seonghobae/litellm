@@ -36,7 +36,11 @@ headers = {
 }
 
 # https://www.python-httpx.org/advanced/timeouts
-_DEFAULT_TIMEOUT = httpx.Timeout(timeout=5.0, connect=5.0)
+from litellm.constants import request_timeout, connection_timeout
+
+_DEFAULT_TIMEOUT = httpx.Timeout(
+    timeout=request_timeout, connect=connection_timeout
+)
 
 
 def mask_sensitive_info(error_message):
@@ -867,7 +871,9 @@ def get_async_httpx_client(
         _new_client = AsyncHTTPHandler(**params)
     else:
         _new_client = AsyncHTTPHandler(
-            timeout=httpx.Timeout(timeout=600.0, connect=5.0)
+            timeout=httpx.Timeout(
+                timeout=request_timeout, connect=connection_timeout
+            )
         )
 
     litellm.in_memory_llm_clients_cache.set_cache(
@@ -902,7 +908,11 @@ def _get_httpx_client(params: Optional[dict] = None) -> HTTPHandler:
     if params is not None:
         _new_client = HTTPHandler(**params)
     else:
-        _new_client = HTTPHandler(timeout=httpx.Timeout(timeout=600.0, connect=5.0))
+        _new_client = HTTPHandler(
+            timeout=httpx.Timeout(
+                timeout=request_timeout, connect=connection_timeout
+            )
+        )
 
     litellm.in_memory_llm_clients_cache.set_cache(
         key=_cache_key_name,

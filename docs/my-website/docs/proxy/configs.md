@@ -408,8 +408,9 @@ model_list:
 
 litellm_settings:
   num_retries: 3 # retry call 3 times on each model_name (e.g. zephyr-beta)
-  request_timeout: 10 # raise Timeout error if call takes longer than 10s. Sets litellm.request_timeout 
-  fallbacks: [{"zephyr-beta": ["gpt-4o"]}] # fallback to gpt-4o if call fails num_retries 
+  request_timeout: 10 # raise Timeout error if call takes longer than 10s. Sets litellm.request_timeout
+  connection_timeout: 5 # sets litellm.connection_timeout
+  fallbacks: [{"zephyr-beta": ["gpt-4o"]}] # fallback to gpt-4o if call fails num_retries
   context_window_fallbacks: [{"zephyr-beta": ["gpt-3.5-turbo-16k"]}, {"gpt-4o": ["gpt-3.5-turbo-16k"]}] # fallback to gpt-3.5-turbo-16k if context window error
   allowed_fails: 3 # cooldown model if it fails > 1 call in a minute. 
 
@@ -575,9 +576,11 @@ custom_tokenizer:
 ### Configure DB Pool Limits + Connection Timeouts 
 
 ```yaml
-general_settings: 
+general_settings:
   database_connection_pool_limit: 100 # sets connection pool for prisma client to postgres db at 100
-  database_connection_timeout: 60 # sets a 60s timeout for any connection call to the db 
+  database_connection_timeout: 60 # sets a 60s timeout for any connection call to the db
+  connection_timeout: 5 # timeout for establishing connections
+  request_timeout: 600 # raise Timeout error if call takes longer than 600 seconds
 ```
 
 ## Extras

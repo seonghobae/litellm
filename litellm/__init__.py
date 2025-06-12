@@ -51,6 +51,7 @@ from litellm.constants import (
     baseten_models,
     REPEATED_STREAMING_CHUNK_LIMIT,
     request_timeout,
+    connection_timeout,
     open_ai_embedding_models,
     cohere_embedding_models,
     bedrock_embedding_models,
@@ -310,9 +311,12 @@ use_aiohttp_transport: bool = True  # Older variable, aiohttp is now the default
 disable_aiohttp_transport: bool = False  # Set this to true to use httpx instead
 force_ipv4: bool = False  # when True, litellm will force ipv4 for all LLM requests. Some users have seen httpx ConnectionError when using ipv6.
 module_level_aclient = AsyncHTTPHandler(
-    timeout=request_timeout, client_alias="module level aclient"
+    timeout=httpx.Timeout(timeout=request_timeout, connect=connection_timeout),
+    client_alias="module level aclient",
 )
-module_level_client = HTTPHandler(timeout=request_timeout)
+module_level_client = HTTPHandler(
+    timeout=httpx.Timeout(timeout=request_timeout, connect=connection_timeout)
+)
 
 #### RETRIES ####
 num_retries: Optional[int] = None  # per model endpoint

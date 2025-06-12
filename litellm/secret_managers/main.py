@@ -112,7 +112,12 @@ def get_secret(  # noqa: PLR0915
             if oidc_token is not None:
                 return oidc_token
 
-            oidc_client = HTTPHandler(timeout=httpx.Timeout(timeout=600.0, connect=5.0))
+            oidc_client = HTTPHandler(
+                timeout=httpx.Timeout(
+                    timeout=litellm.request_timeout,
+                    connect=litellm.connection_timeout,
+                )
+            )
             # https://cloud.google.com/compute/docs/instances/verifying-instance-identity#request_signature
             response = oidc_client.get(
                 "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity",
@@ -150,7 +155,12 @@ def get_secret(  # noqa: PLR0915
             if oidc_token is not None:
                 return oidc_token
 
-            oidc_client = HTTPHandler(timeout=httpx.Timeout(timeout=600.0, connect=5.0))
+            oidc_client = HTTPHandler(
+                timeout=httpx.Timeout(
+                    timeout=litellm.request_timeout,
+                    connect=litellm.connection_timeout,
+                )
+            )
             response = oidc_client.get(
                 actions_id_token_request_url,
                 params={"audience": oidc_aud},

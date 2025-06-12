@@ -178,7 +178,10 @@ class OpenAILikeChatHandler(OpenAILikeBase):
         json_mode: bool = False,
     ) -> ModelResponse:
         if timeout is None:
-            timeout = httpx.Timeout(timeout=600.0, connect=5.0)
+            timeout = httpx.Timeout(
+                timeout=litellm.request_timeout,
+                connect=litellm.connection_timeout,
+            )
 
         if client is None:
             client = litellm.module_level_aclient
