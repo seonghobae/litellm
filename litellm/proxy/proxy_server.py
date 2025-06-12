@@ -855,6 +855,7 @@ user_model = None
 user_debug = False
 user_max_tokens = None
 user_request_timeout = None
+user_connection_timeout = None
 user_temperature = None
 user_telemetry = True
 user_config = None
@@ -2604,6 +2605,12 @@ class ProxyConfig:
                 alerting_args=general_settings["alerting_args"],
             )
 
+        if "connection_timeout" in _general_settings:
+            general_settings["connection_timeout"] = _general_settings[
+                "connection_timeout"
+            ]
+            litellm.connection_timeout = _general_settings["connection_timeout"]
+
         ## PASS-THROUGH ENDPOINTS ##
         if "pass_through_endpoints" in _general_settings:
             general_settings["pass_through_endpoints"] = _general_settings[
@@ -2927,6 +2934,7 @@ async def initialize(  # noqa: PLR0915
     temperature=None,
     max_tokens=None,
     request_timeout=600,
+    connection_timeout=5.0,
     max_budget=None,
     telemetry=False,
     drop_params=True,
@@ -2936,7 +2944,7 @@ async def initialize(  # noqa: PLR0915
     use_queue=False,
     config=None,
 ):
-    global user_model, user_api_base, user_debug, user_detailed_debug, user_user_max_tokens, user_request_timeout, user_temperature, user_telemetry, user_headers, experimental, llm_model_list, llm_router, general_settings, master_key, user_custom_auth, prisma_client
+    global user_model, user_api_base, user_debug, user_detailed_debug, user_user_max_tokens, user_request_timeout, user_connection_timeout, user_temperature, user_telemetry, user_headers, experimental, llm_model_list, llm_router, general_settings, master_key, user_custom_auth, prisma_client
     if os.getenv("LITELLM_DONT_SHOW_FEEDBACK_BOX", "").lower() != "true":
         generate_feedback_box()
     user_model = model
@@ -3019,6 +3027,9 @@ async def initialize(  # noqa: PLR0915
     if request_timeout:
         user_request_timeout = request_timeout
         dynamic_config[user_model]["request_timeout"] = request_timeout
+    if connection_timeout:
+        user_connection_timeout = connection_timeout
+        dynamic_config[user_model]["connection_timeout"] = connection_timeout
     if alias:  # model-specific param
         dynamic_config[user_model]["alias"] = alias
     if drop_params is True:  # litellm-specific param
@@ -3633,6 +3644,7 @@ async def chat_completion(  # noqa: PLR0915
             user_model=user_model,
             user_temperature=user_temperature,
             user_request_timeout=user_request_timeout,
+            user_connection_timeout=user_connection_timeout,
             user_max_tokens=user_max_tokens,
             user_api_base=user_api_base,
             version=version,
@@ -3742,6 +3754,7 @@ async def completion(  # noqa: PLR0915
             user_model=user_model,
             user_temperature=user_temperature,
             user_request_timeout=user_request_timeout,
+            user_connection_timeout=user_connection_timeout,
             user_max_tokens=user_max_tokens,
             user_api_base=user_api_base,
             version=version,
@@ -4467,6 +4480,7 @@ async def websocket_endpoint(
             user_model=user_model,
             user_temperature=user_temperature,
             user_request_timeout=user_request_timeout,
+            user_connection_timeout=user_connection_timeout,
             user_max_tokens=user_max_tokens,
             user_api_base=user_api_base,
             model=model,
@@ -6680,6 +6694,8 @@ async def async_queue_request(
             data["temperature"] = user_temperature
         if user_request_timeout:
             data["request_timeout"] = user_request_timeout
+        if user_connection_timeout:
+            data["connection_timeout"] = user_connection_timeout
         if user_max_tokens:
             data["max_tokens"] = user_max_tokens
         if user_api_base:

@@ -228,6 +228,13 @@ class LiteLLMProxyRequestSetup:
         return None
 
     @staticmethod
+    def _get_connection_timeout_from_request(headers: dict) -> Optional[float]:
+        connection_timeout_header = headers.get("x-litellm-connection-timeout", None)
+        if connection_timeout_header is not None:
+            return float(connection_timeout_header)
+        return None
+
+    @staticmethod
     def _get_forwardable_headers(
         headers: Union[Headers, dict],
     ):
@@ -256,23 +263,29 @@ class LiteLLMProxyRequestSetup:
         return None
 
     @staticmethod
-    def get_user_from_headers(headers: dict, general_settings: Optional[Dict] = None) -> Optional[str]:
+    def get_user_from_headers(
+        headers: dict, general_settings: Optional[Dict] = None
+    ) -> Optional[str]:
         """
         Get the user from the specified header if `general_settings.user_header_name` is set.
         """
         if general_settings is None:
             return None
-        
+
         header_name = general_settings.get("user_header_name")
         if header_name is None or header_name == "":
             return None
-        
-        if not isinstance(header_name, str):
-            raise TypeError(f"Expected user_header_name to be a str but got {type(header_name)}")
 
-        user = LiteLLMProxyRequestSetup._get_case_insensitive_header(headers, header_name)
+        if not isinstance(header_name, str):
+            raise TypeError(
+                f"Expected user_header_name to be a str but got {type(header_name)}"
+            )
+
+        user = LiteLLMProxyRequestSetup._get_case_insensitive_header(
+            headers, header_name
+        )
         if user is not None:
-            verbose_logger.info(f"found user \"{user}\" in header \"{header_name}\"")
+            verbose_logger.info(f'found user "{user}" in header "{header_name}"')
 
         return user
 
@@ -351,6 +364,12 @@ class LiteLLMProxyRequestSetup:
         timeout = LiteLLMProxyRequestSetup._get_timeout_from_request(headers)
         if timeout is not None:
             data["timeout"] = timeout
+
+        connection_timeout = (
+            LiteLLMProxyRequestSetup._get_connection_timeout_from_request(headers)
+        )
+        if connection_timeout is not None:
+            data["connection_timeout"] = connection_timeout
 
         return data
 
@@ -580,7 +599,9 @@ async def add_litellm_data_to_request(  # noqa: PLR0915
         if isinstance(data["metadata"], str):
             data["metadata"] = safe_json_loads(data["metadata"])
             if not isinstance(data["metadata"], dict):
-                verbose_proxy_logger.warning(f"Failed to parse 'metadata' as JSON dict. Received value: {data['metadata']}")
+                verbose_proxy_logger.warning(
+                    f"Failed to parse 'metadata' as JSON dict. Received value: {data['metadata']}"
+                )
         data[_metadata_variable_name]["requester_metadata"] = copy.deepcopy(
             data["metadata"]
         )

@@ -8,6 +8,7 @@ import httpx
 import litellm
 from litellm._logging import verbose_logger
 from litellm.llms.custom_httpx.http_handler import HTTPHandler, get_async_httpx_client
+from litellm.constants import connection_timeout
 from litellm.llms.vertex_ai.gemini.vertex_and_google_ai_studio_gemini import VertexLLM
 from litellm.types.fine_tuning import OpenAIFineTuningHyperparameters
 from litellm.types.llms.openai import FineTuningJobCreate
@@ -266,7 +267,9 @@ class VertexFineTuningAPI(VertexLLM):
                 headers=headers,
                 request_data=fine_tune_job,
             )
-        sync_handler = HTTPHandler(timeout=httpx.Timeout(timeout=600.0, connect=5.0))
+        sync_handler = HTTPHandler(
+            timeout=httpx.Timeout(timeout=600.0, connect=connection_timeout)
+        )
 
         verbose_logger.debug(
             "about to create fine tuning job: %s, request_data: %s",

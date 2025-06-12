@@ -7,7 +7,11 @@ import httpx  # type: ignore
 from openai import APITimeoutError, AsyncAzureOpenAI, AzureOpenAI
 
 import litellm
-from litellm.constants import AZURE_OPERATION_POLLING_TIMEOUT, DEFAULT_MAX_RETRIES
+from litellm.constants import (
+    AZURE_OPERATION_POLLING_TIMEOUT,
+    DEFAULT_MAX_RETRIES,
+    connection_timeout,
+)
 from litellm.litellm_core_utils.litellm_logging import Logging as LiteLLMLoggingObj
 from litellm.litellm_core_utils.logging_utils import track_llm_api_timing
 from litellm.llms.custom_httpx.http_handler import (
@@ -799,7 +803,9 @@ class AzureChatCompletion(BaseAzureLLM, BaseLLM):
                     _httpx_timeout = httpx.Timeout(timeout)
                     _params["timeout"] = _httpx_timeout
             else:
-                _params["timeout"] = httpx.Timeout(timeout=600.0, connect=5.0)
+                _params["timeout"] = httpx.Timeout(
+                    timeout=600.0, connect=connection_timeout
+                )
 
             async_handler = get_async_httpx_client(
                 llm_provider=LlmProviders.AZURE,
@@ -900,7 +906,9 @@ class AzureChatCompletion(BaseAzureLLM, BaseLLM):
                     _httpx_timeout = httpx.Timeout(timeout)
                     _params["timeout"] = _httpx_timeout
             else:
-                _params["timeout"] = httpx.Timeout(timeout=600.0, connect=5.0)
+                _params["timeout"] = httpx.Timeout(
+                    timeout=600.0, connect=connection_timeout
+                )
 
             sync_handler = HTTPHandler(**_params, client=litellm.client_session)  # type: ignore
         else:
