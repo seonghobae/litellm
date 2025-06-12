@@ -18,6 +18,7 @@ from litellm.llms.openai.chat.gpt_transformation import OpenAIGPTConfig
 from litellm.llms.openai.openai import OpenAIConfig
 from litellm.types.utils import CustomStreamingDecoder, ModelResponse
 from litellm.utils import CustomStreamWrapper, ProviderConfigManager
+from litellm.constants import connection_timeout
 
 from ..common_utils import OpenAILikeBase, OpenAILikeError
 from .transformation import OpenAILikeChatConfig
@@ -178,7 +179,7 @@ class OpenAILikeChatHandler(OpenAILikeBase):
         json_mode: bool = False,
     ) -> ModelResponse:
         if timeout is None:
-            timeout = httpx.Timeout(timeout=600.0, connect=5.0)
+            timeout = httpx.Timeout(timeout=600.0, connect=connection_timeout)
 
         if client is None:
             client = litellm.module_level_aclient

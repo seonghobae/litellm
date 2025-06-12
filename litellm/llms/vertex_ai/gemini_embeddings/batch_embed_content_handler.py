@@ -14,6 +14,7 @@ from litellm.llms.custom_httpx.http_handler import (
     HTTPHandler,
     get_async_httpx_client,
 )
+from litellm.constants import connection_timeout
 from litellm.types.llms.openai import EmbeddingInput
 from litellm.types.llms.vertex_ai import (
     VertexAIBatchEmbeddingsRequestBody,
@@ -74,7 +75,9 @@ class GoogleBatchEmbeddings(VertexLLM):
                     _httpx_timeout = httpx.Timeout(timeout)
                     _params["timeout"] = _httpx_timeout
             else:
-                _params["timeout"] = httpx.Timeout(timeout=600.0, connect=5.0)
+                _params["timeout"] = httpx.Timeout(
+                    timeout=600.0, connect=connection_timeout
+                )
 
             sync_handler: HTTPHandler = HTTPHandler(**_params)  # type: ignore
         else:
@@ -152,7 +155,9 @@ class GoogleBatchEmbeddings(VertexLLM):
                     _httpx_timeout = httpx.Timeout(timeout)
                     _params["timeout"] = _httpx_timeout
             else:
-                _params["timeout"] = httpx.Timeout(timeout=600.0, connect=5.0)
+                _params["timeout"] = httpx.Timeout(
+                    timeout=600.0, connect=connection_timeout
+                )
 
             async_handler: AsyncHTTPHandler = get_async_httpx_client(
                 llm_provider=litellm.LlmProviders.VERTEX_AI,

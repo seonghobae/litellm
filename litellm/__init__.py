@@ -51,6 +51,7 @@ from litellm.constants import (
     baseten_models,
     REPEATED_STREAMING_CHUNK_LIMIT,
     request_timeout,
+    connection_timeout,
     open_ai_embedding_models,
     cohere_embedding_models,
     bedrock_embedding_models,

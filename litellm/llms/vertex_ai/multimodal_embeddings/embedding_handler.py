@@ -10,6 +10,7 @@ from litellm.llms.custom_httpx.http_handler import (
     HTTPHandler,
     get_async_httpx_client,
 )
+from litellm.constants import connection_timeout
 from litellm.llms.vertex_ai.gemini.vertex_and_google_ai_studio_gemini import (
     VertexAIError,
     VertexLLM,
@@ -77,7 +78,9 @@ class VertexMultimodalEmbedding(VertexLLM):
                     _httpx_timeout = httpx.Timeout(timeout)
                     _params["timeout"] = _httpx_timeout
             else:
-                _params["timeout"] = httpx.Timeout(timeout=600.0, connect=5.0)
+                _params["timeout"] = httpx.Timeout(
+                    timeout=600.0, connect=connection_timeout
+                )
 
             sync_handler: HTTPHandler = HTTPHandler(**_params)  # type: ignore
         else:

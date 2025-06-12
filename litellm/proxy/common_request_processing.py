@@ -257,6 +257,7 @@ class ProxyBaseLLMRequestProcessing:
         user_model: Optional[str] = None,
         user_temperature: Optional[float] = None,
         user_request_timeout: Optional[float] = None,
+        user_connection_timeout: Optional[float] = None,
         user_max_tokens: Optional[int] = None,
         user_api_base: Optional[str] = None,
         model: Optional[str] = None,
@@ -282,6 +283,8 @@ class ProxyBaseLLMRequestProcessing:
             self.data["temperature"] = user_temperature
         if user_request_timeout:
             self.data["request_timeout"] = user_request_timeout
+        if user_connection_timeout:
+            self.data["connection_timeout"] = user_connection_timeout
         if user_max_tokens:
             self.data["max_tokens"] = user_max_tokens
         if user_api_base:
@@ -341,6 +344,7 @@ class ProxyBaseLLMRequestProcessing:
         user_model: Optional[str] = None,
         user_temperature: Optional[float] = None,
         user_request_timeout: Optional[float] = None,
+        user_connection_timeout: Optional[float] = None,
         user_max_tokens: Optional[int] = None,
         user_api_base: Optional[str] = None,
         version: Optional[str] = None,
@@ -364,6 +368,7 @@ class ProxyBaseLLMRequestProcessing:
             user_model=user_model,
             user_temperature=user_temperature,
             user_request_timeout=user_request_timeout,
+            user_connection_timeout=user_connection_timeout,
             user_max_tokens=user_max_tokens,
             user_api_base=user_api_base,
             model=model,

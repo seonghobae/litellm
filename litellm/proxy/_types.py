@@ -1520,6 +1520,10 @@ class ConfigGeneralSettings(LiteLLMPydanticObjectBase):
     database_connection_timeout: Optional[float] = Field(
         60, description="default timeout for a connection to the database"
     )
+    connection_timeout: Optional[float] = Field(
+        5.0,
+        description="timeout in seconds for establishing connection to LLM providers",
+    )
     database_type: Optional[Literal["dynamo_db"]] = Field(
         None, description="to use dynamodb instead of postgres db"
     )
@@ -2689,6 +2693,7 @@ class LitellmDataForBackendLLMCall(TypedDict, total=False):
     headers: dict
     organization: str
     timeout: Optional[float]
+    connection_timeout: Optional[float]
     user: Optional[str]
 
 

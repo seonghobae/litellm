@@ -147,6 +147,7 @@ MAX_SIZE_PER_ITEM_IN_MEMORY_CACHE_IN_KB = int(
 DEFAULT_MAX_TOKENS_FOR_TRITON = int(os.getenv("DEFAULT_MAX_TOKENS_FOR_TRITON", 2000))
 #### Networking settings ####
 request_timeout: float = float(os.getenv("REQUEST_TIMEOUT", 6000))  # time in seconds
+connection_timeout: float = float(os.getenv("CONNECTION_TIMEOUT", 5.0))
 STREAM_SSE_DONE_STRING: str = "[DONE]"
 STREAM_SSE_DATA_PREFIX: str = "data: "
 ### SPEND TRACKING ###
@@ -765,7 +766,10 @@ LENGTH_OF_LITELLM_GENERATED_KEY = int(os.getenv("LENGTH_OF_LITELLM_GENERATED_KEY
 SECRET_MANAGER_REFRESH_INTERVAL = int(
     os.getenv("SECRET_MANAGER_REFRESH_INTERVAL", 86400)
 )
-LITELLM_SETTINGS_SAFE_DB_OVERRIDES = ["default_internal_user_params"]
+LITELLM_SETTINGS_SAFE_DB_OVERRIDES = [
+    "default_internal_user_params",
+    "connection_timeout",
+]
 SPECIAL_LITELLM_AUTH_TOKEN = ["ui-token"]
 DEFAULT_MANAGEMENT_OBJECT_IN_MEMORY_CACHE_TTL = int(
     os.getenv("DEFAULT_MANAGEMENT_OBJECT_IN_MEMORY_CACHE_TTL", 60)
