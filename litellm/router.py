@@ -270,7 +270,7 @@ class Router:
             cache_kwargs (dict): Additional kwargs to pass to RedisCache. Defaults to {}.
             caching_groups (Optional[List[tuple]]): List of model groups for caching across model groups. Defaults to None.
             client_ttl (int): Time-to-live for cached clients in seconds. Defaults to 3600.
-            polling_interval: (Optional[float]): frequency of polling queue. Only for '.scheduler_acompletion()'. Default is 3ms.
+            polling_interval: (Optional[float]): frequency of polling queue. Only for '.scheduler_acompletion()'. Default is 0.03s (30ms).
             default_priority: (Optional[int]): the default priority for a request. Only for '.scheduler_acompletion()'. Default is None.
             num_retries (Optional[int]): Number of retries for failed requests. Defaults to 2.
             timeout (Optional[float]): Timeout for requests. Defaults to None.
@@ -1586,7 +1586,7 @@ class Router:
         ## POLL QUEUE
         end_time = time.time() + self.timeout
         curr_time = time.time()
-        poll_interval = self.scheduler.polling_interval  # poll every 3ms
+        poll_interval = self.scheduler.polling_interval  # poll every 0.03s (30ms)
         make_request = False
 
         while curr_time < end_time:
@@ -1648,7 +1648,7 @@ class Router:
         ## POLL QUEUE
         end_time = time.time() + self.timeout
         curr_time = time.time()
-        poll_interval = self.scheduler.polling_interval  # poll every 3ms
+        poll_interval = self.scheduler.polling_interval  # poll every 0.03s (30ms)
         make_request = False
 
         while curr_time < end_time:
