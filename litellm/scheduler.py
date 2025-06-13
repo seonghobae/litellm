@@ -31,7 +31,7 @@ class Scheduler:
         redis_cache: Optional[RedisCache] = None,
     ):
         """
-        polling_interval: float or null - frequency of polling queue. Default is 3ms.
+        polling_interval: float or null - frequency of polling queue. Default is 0.03s (30ms).
         """
         self.queue: list = []
         default_in_memory_ttl: Optional[float] = None
@@ -43,7 +43,7 @@ class Scheduler:
         )
         self.polling_interval = (
             polling_interval or DEFAULT_POLLING_INTERVAL
-        )  # default to 3ms
+        )  # default to 0.03s (30ms)
 
     async def add_request(self, request: FlowItem):
         # We use the priority directly, as lower values indicate higher priority

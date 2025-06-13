@@ -42,7 +42,7 @@ router = Router(
     ],
     timeout=2, # timeout request if takes > 2s
     routing_strategy="usage-based-routing-v2",
-    polling_interval=0.03 # poll queue every 3ms if no healthy deployments
+    polling_interval=0.03 # poll queue every 30ms if no healthy deployments
 )
 
 try:
