@@ -245,7 +245,7 @@ router_settings:
   redis_host: <your-redis-host>
   redis_password: <your-redis-password>
   redis_port: <your-redis-port>
-  enable_pre_call_check: true
+  enable_pre_call_checks: true
 
 general_settings:
   master_key: sk-1234
@@ -292,7 +292,7 @@ model_list = [{ ... }]
 # init router
 router = Router(model_list=model_list,
 				routing_strategy="latency-based-routing",# 👈 set routing strategy
-				enable_pre_call_check=True, # enables router rate limits for concurrent calls
+                                enable_pre_call_checks=True, # enables router rate limits for concurrent calls
 				)
 
 ## CALL 1+2
@@ -551,7 +551,7 @@ router = Router(model_list=model_list,
 				redis_password=os.environ["REDIS_PASSWORD"], 
 				redis_port=os.environ["REDIS_PORT"], 
                 routing_strategy="usage-based-routing"
-				enable_pre_call_check=True, # enables router rate limits for concurrent calls
+                                enable_pre_call_checks=True, # enables router rate limits for concurrent calls
 				)
 
 response = await router.acompletion(model="gpt-3.5-turbo", 
