@@ -3,6 +3,7 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
+import litellm
 
 from litellm.secret_managers.main import get_secret
 
@@ -50,7 +51,7 @@ def mock_env():
 @patch("litellm.secret_managers.main.HTTPHandler")
 def test_oidc_google_success(mock_http_handler, mock_oidc_cache):
     mock_oidc_cache.get_cache.return_value = None
-    mock_handler = MockHTTPHandler(timeout=600.0)
+    mock_handler = MockHTTPHandler(timeout=litellm.request_timeout)
     mock_http_handler.return_value = mock_handler
     secret_name = "oidc/google/[invalid url, do not cite]"
     result = get_secret(secret_name)
@@ -76,7 +77,7 @@ def test_oidc_google_cached(mock_oidc_cache):
 
 
 def test_oidc_google_failure(mock_oidc_cache):
-    mock_handler = MockHTTPHandler(timeout=600.0)
+    mock_handler = MockHTTPHandler(timeout=litellm.request_timeout)
     mock_handler.status_code = 400
 
     with patch("litellm.secret_managers.main.HTTPHandler", return_value=mock_handler):
@@ -110,7 +111,7 @@ def test_oidc_github_success(mock_http_handler, mock_oidc_cache, mock_env):
     mock_env["ACTIONS_ID_TOKEN_REQUEST_URL"] = "https://github.com/token"
     mock_env["ACTIONS_ID_TOKEN_REQUEST_TOKEN"] = "github_token"
     mock_oidc_cache.get_cache.return_value = None
-    mock_handler = MockHTTPHandler(timeout=600.0)
+    mock_handler = MockHTTPHandler(timeout=litellm.request_timeout)
     mock_http_handler.return_value = mock_handler
 
     secret_name = "oidc/github/github-audience"

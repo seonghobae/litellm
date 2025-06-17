@@ -77,7 +77,10 @@ class VertexMultimodalEmbedding(VertexLLM):
                     _httpx_timeout = httpx.Timeout(timeout)
                     _params["timeout"] = _httpx_timeout
             else:
-                _params["timeout"] = httpx.Timeout(timeout=600.0, connect=5.0)
+                _params["timeout"] = httpx.Timeout(
+                    timeout=litellm.request_timeout,
+                    connect=litellm.connection_timeout,
+                )
 
             sync_handler: HTTPHandler = HTTPHandler(**_params)  # type: ignore
         else:

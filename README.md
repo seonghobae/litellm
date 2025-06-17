@@ -439,3 +439,8 @@ All these checks must pass before your PR can be merged.
 1. Navigate to `ui/litellm-dashboard`
 2. Install dependencies `npm install`
 3. Run `npm run dev` to start the dashboard
+
+### Timeout Configuration
+LiteLLM uses two environment variables to control timeouts:
+- `REQUEST_TIMEOUT` sets the maximum duration for a request.
+- `CONNECTION_TIMEOUT` sets the limit for establishing new connections.
