@@ -1,5 +1,10 @@
 # LiteLLM Architecture - LiteLLM SDK + AI Gateway
 
+## Canonical Delivery Docs
+
+- Repository-canonical delivery and verification docs live under `docs/engineering/`, `docs/workflow/`, `docs/agents/`, and `docs/coderabbit/`.
+- These docs complement `AGENTS.md` by recording the active acceptance, harness, and PR continuity rules used to ship focused fixes such as `BerriAI/litellm#23959`.
+
 This document helps contributors understand where to make changes in LiteLLM.
 
 ---

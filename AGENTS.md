@@ -155,6 +155,7 @@ When opening issues or pull requests, follow these templates:
 - Update provider documentation when adding new providers
 - Include code examples for new features
 - Update changelog and release notes
+- Repository-canonical engineering and workflow docs live under `docs/engineering/`, `docs/workflow/`, `docs/agents/`, and `docs/coderabbit/`.
 
 ## SECURITY CONSIDERATIONS
 
