@@ -29,6 +29,9 @@ class TestWatsonXAudioTranscription:
         Test that litellm.transcription sends request to correct WatsonX URL with proper headers.
         """
         captured_request = {}
+        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+
+        client = AsyncHTTPHandler()
 
         async def mock_post(*args, **kwargs):
             captured_request["url"] = str(kwargs.get("url", args[0] if args else None))
@@ -52,6 +55,7 @@ class TestWatsonXAudioTranscription:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     project_id="test-project-123",
@@ -68,9 +72,7 @@ class TestWatsonXAudioTranscription:
 
         # Validate headers contain WatsonX auth
         assert "Authorization" in captured_request["headers"]
-        assert (
-            "Bearer test-bearer-token" in captured_request["headers"]["Authorization"]
-        )
+        assert "Bearer test-bearer-token" in captured_request["headers"]["Authorization"]
 
         # Validate Content-Type is NOT set (httpx sets multipart/form-data automatically)
         assert "Content-Type" not in captured_request["headers"]
@@ -94,6 +96,9 @@ class TestWatsonXAudioTranscription:
         - OpenAI params are included in form data
         """
         captured_request = {}
+        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+
+        client = AsyncHTTPHandler()
 
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
@@ -115,6 +120,7 @@ class TestWatsonXAudioTranscription:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     project_id="test-project-123",
@@ -146,9 +152,7 @@ class TestWatsonXAudioTranscription:
         # Validate file is in files dict (multipart/form-data)
         files = captured_request.get("files", {})
         assert "file" in files
-        assert isinstance(
-            files["file"], tuple
-        )  # Should be (filename, content, content_type)
+        assert isinstance(files["file"], tuple)  # Should be (filename, content, content_type)
 
     @pytest.mark.asyncio
     async def test_watsonx_transcription_only_user_params_sent_with_project_id(self):
@@ -158,6 +162,9 @@ class TestWatsonXAudioTranscription:
         LiteLLM should NOT add extra params like response_format if user didn't specify them.
         """
         captured_request = {}
+        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+
+        client = AsyncHTTPHandler()
 
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
@@ -180,6 +187,7 @@ class TestWatsonXAudioTranscription:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     project_id="test-project-123",
@@ -201,9 +209,7 @@ class TestWatsonXAudioTranscription:
         )
 
         # Specifically verify response_format is NOT added
-        assert (
-            "response_format" not in data
-        ), "response_format should NOT be added by default"
+        assert "response_format" not in data, "response_format should NOT be added by default"
 
         # Verify file is sent separately
         files = captured_request.get("files", {})
@@ -217,6 +223,9 @@ class TestWatsonXAudioTranscription:
         LiteLLM should NOT add extra params like response_format if user didn't specify them.
         """
         captured_request = {}
+        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+
+        client = AsyncHTTPHandler()
 
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
@@ -239,6 +248,7 @@ class TestWatsonXAudioTranscription:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     space_id="test-space_id-123",
@@ -260,9 +270,7 @@ class TestWatsonXAudioTranscription:
         )
 
         # Specifically verify response_format is NOT added
-        assert (
-            "response_format" not in data
-        ), "response_format should NOT be added by default"
+        assert "response_format" not in data, "response_format should NOT be added by default"
 
         # Verify file is sent separately
         files = captured_request.get("files", {})
@@ -286,7 +294,9 @@ class TestWatsonXAudioTranscription:
             "model": "whisper-large-v3-turbo",  # This field should be removed
             "duration": 5.5,
         }
-        mock_response.text = '{"text": "Hello, this is a test transcription.", "model": "whisper-large-v3-turbo", "duration": 5.5}'
+        mock_response.text = (
+            '{"text": "Hello, this is a test transcription.", "model": "whisper-large-v3-turbo", "duration": 5.5}'
+        )
 
         # This should not raise a TypeError - model field should be removed
         result = handler.transform_audio_transcription_response(mock_response)
@@ -324,9 +334,7 @@ class TestWatsonXAudioTranscription:
             "text": "Hello, this is a test transcription.",
             "duration": 5.5,
         }
-        mock_response.text = (
-            '{"text": "Hello, this is a test transcription.", "duration": 5.5}'
-        )
+        mock_response.text = '{"text": "Hello, this is a test transcription.", "duration": 5.5}'
 
         result = handler.transform_audio_transcription_response(mock_response)
 
