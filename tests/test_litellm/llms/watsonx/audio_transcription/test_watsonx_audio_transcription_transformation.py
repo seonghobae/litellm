@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, os.path.abspath("../../../../.."))
 
 import litellm
+from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 from litellm.llms.watsonx.audio_transcription.transformation import (
     IBMWatsonXAudioTranscriptionConfig,
 )
@@ -28,7 +29,6 @@ class TestWatsonXAudioTranscription:
         Test that litellm.transcription sends request to correct WatsonX URL with proper headers.
         """
         captured_request = {}
-        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
         async def mock_post(*args, **kwargs):
             captured_request["url"] = str(kwargs.get("url", args[0] if args else None))
@@ -96,7 +96,6 @@ class TestWatsonXAudioTranscription:
         - OpenAI params are included in form data
         """
         captured_request = {}
-        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
@@ -160,7 +159,6 @@ class TestWatsonXAudioTranscription:
         LiteLLM should NOT add extra params like response_format if user didn't specify them.
         """
         captured_request = {}
-        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
@@ -222,7 +220,6 @@ class TestWatsonXAudioTranscription:
         LiteLLM should NOT add extra params like response_format if user didn't specify them.
         """
         captured_request = {}
-        from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
