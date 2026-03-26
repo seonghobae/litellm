@@ -312,7 +312,7 @@ class TestMCPServerManager:
         manager.get_allowed_mcp_servers = AsyncMock(return_value=["github", "zapier"])
 
         def mock_get_server_by_id(server_id):
-            return {"github": server1, "zapier": server2}.get(server_id)
+            return {"github": server1, "zapier": server2}[server_id]
 
         manager.get_mcp_server_by_id = MagicMock(side_effect=mock_get_server_by_id)
 
@@ -1661,7 +1661,6 @@ class TestMCPServerManager:
 
         # Unprefixed resolution
         resolved_server_unpref = manager._get_mcp_server_from_tool_name("create_zap")
-        print(resolved_server_unpref)
         assert resolved_server_unpref is not None
         assert resolved_server_unpref.server_id == server.server_id
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from collections.abc import Iterator, Sequence
 from functools import wraps
 from typing import Any
@@ -50,7 +51,7 @@ class RequestsMock:
         self._patchers: list[patch] = []
 
     def __enter__(self) -> "RequestsMock":
-        _ACTIVE_MOCKS.append(self)
+        _get_active_mocks_list().append(self)
         self._patchers = [
             patch.object(requests.sessions.Session, "request", new=self._request),
             patch.object(requests.sessions.Session, "send", new=self._send),
@@ -62,7 +63,7 @@ class RequestsMock:
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
         while self._patchers:
             self._patchers.pop().stop()
-        _ACTIVE_MOCKS.pop()
+        _get_active_mocks_list().pop()
 
     def add(self, method: str, url: str, **kwargs: Any) -> None:
         self._registered.append(_RegisteredResponse(method, url, **kwargs))
@@ -80,8 +81,12 @@ class RequestsMock:
             method=method,
             url=url,
             headers=kwargs.get("headers"),
-            params=kwargs.get("params"),
+            files=kwargs.get("files"),
             data=kwargs.get("data"),
+            params=kwargs.get("params"),
+            auth=kwargs.get("auth"),
+            cookies=kwargs.get("cookies"),
+            hooks=kwargs.get("hooks"),
             json=kwargs.get("json"),
         ).prepare()
 
@@ -122,14 +127,23 @@ class RequestsMock:
         raise AssertionError(f"No mocked response for {method} {url}")
 
 
-_ACTIVE_MOCKS: list[RequestsMock] = []
+_local = threading.local()
+
+
+def _get_active_mocks_list() -> list[RequestsMock]:
+    if not hasattr(_local, "active_mocks"):
+        _local.active_mocks = []
+    return _local.active_mocks
+
+
 calls = _Calls()
 
 
 def _get_active_mock() -> RequestsMock:
-    if not _ACTIVE_MOCKS:
+    active_mocks = _get_active_mocks_list()
+    if not active_mocks:
         raise RuntimeError("responses mock is not active")
-    return _ACTIVE_MOCKS[-1]
+    return active_mocks[-1]
 
 
 def add(method: str, url: str, **kwargs: Any) -> None:
