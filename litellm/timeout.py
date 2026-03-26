@@ -53,11 +53,18 @@ def timeout(timeout_duration: float = 0.0, exception_to_raise=Timeout):
                 result = future.result(timeout=local_timeout_duration)
             except futures.TimeoutError:
                 thread.stop_loop()
-                model = args[0] if len(args) > 0 else kwargs["model"]
+                model = args[0] if len(args) > 0 else kwargs.get("model", "")
+                try:
+                    from litellm.litellm_core_utils.get_llm_provider_logic import get_llm_provider
+
+                    _, custom_llm_provider, _, _ = get_llm_provider(model=model)
+                except Exception:
+                    custom_llm_provider = "openai"
+
                 raise exception_to_raise(
                     f"A timeout error occurred. The function call took longer than {local_timeout_duration} second(s).",
-                    model=model,  # [TODO]: replace with logic for parsing out llm provider from model name
-                    llm_provider="openai",
+                    model=model,
+                    llm_provider=custom_llm_provider or "openai",
                 )
             thread.stop_loop()
             return result
@@ -70,16 +77,21 @@ def timeout(timeout_duration: float = 0.0, exception_to_raise=Timeout):
             elif "request_timeout" in kwargs and kwargs["request_timeout"] is not None:
                 local_timeout_duration = kwargs["request_timeout"]
             try:
-                value = await asyncio.wait_for(
-                    func(*args, **kwargs), timeout=timeout_duration
-                )
+                value = await asyncio.wait_for(func(*args, **kwargs), timeout=timeout_duration)
                 return value
             except asyncio.TimeoutError:
-                model = args[0] if len(args) > 0 else kwargs["model"]
+                model = args[0] if len(args) > 0 else kwargs.get("model", "")
+                try:
+                    from litellm.litellm_core_utils.get_llm_provider_logic import get_llm_provider
+
+                    _, custom_llm_provider, _, _ = get_llm_provider(model=model)
+                except Exception:
+                    custom_llm_provider = "openai"
+
                 raise exception_to_raise(
                     f"A timeout error occurred. The function call took longer than {local_timeout_duration} second(s).",
-                    model=model,  # [TODO]: replace with logic for parsing out llm provider from model name
-                    llm_provider="openai",
+                    model=model,
+                    llm_provider=custom_llm_provider or "openai",
                 )
 
         if iscoroutinefunction(func):
