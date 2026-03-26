@@ -355,3 +355,48 @@ class TestExtractAndRaiseLitellmException:
         )
         
         assert result is None
+
+bedrock_internal_server_error_test_cases = [
+    (
+        "internalServerException {\"message\":\"The system encountered an unexpected error during processing. Try your request again.\"}",
+        True,
+    ),
+    ("A generic error occurred.", False),
+]
+
+@pytest.mark.parametrize(
+    "error_message, should_raise_internal_server_error", bedrock_internal_server_error_test_cases
+)
+def test_bedrock_internal_server_error_mapping(error_message, should_raise_internal_server_error):
+    """
+    Tests that the exception_type function correctly maps Bedrock's
+    internalServerException to litellm.InternalServerError.
+    """
+    model = "bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+    custom_llm_provider = "bedrock"
+
+    class MockBedrockException(Exception):
+        def __init__(self, message, status_code=400):
+            super().__init__(message)
+            self.message = message
+            self.status_code = status_code
+
+    # Bedrock mid-stream error events often have a 400 status code even for server errors
+    original_exception = MockBedrockException(error_message, status_code=400)
+
+    if should_raise_internal_server_error:
+        with pytest.raises(litellm.InternalServerError) as excinfo:
+            exception_type(
+                model=model,
+                original_exception=original_exception,
+                custom_llm_provider=custom_llm_provider,
+            )
+        assert isinstance(excinfo.value, litellm.InternalServerError)
+    else:
+        # For the negative case, it falls back to checking status_code=400, mapping to BadRequestError
+        with pytest.raises(litellm.BadRequestError):
+            exception_type(
+                model=model,
+                original_exception=original_exception,
+                custom_llm_provider=custom_llm_provider,
+            )
