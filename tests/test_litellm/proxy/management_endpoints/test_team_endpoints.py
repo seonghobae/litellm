@@ -2699,7 +2699,7 @@ async def test_new_team_max_budget_exceeds_user_max_budget(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_new_team_max_budget_within_user_limit():
+async def test_new_team_max_budget_within_user_limit(monkeypatch):
     """
     Test that /team/new succeeds when max_budget is within user's user_max_budget.
 
@@ -2707,8 +2707,12 @@ async def test_new_team_max_budget_within_user_limit():
     """
     from fastapi import Request
 
-    from litellm.proxy._types import NewTeamRequest, UserAPIKeyAuth
+    import litellm
+    from litellm.proxy._types import NewTeamRequest, LitellmUserRoles, UserAPIKeyAuth
     from litellm.proxy.management_endpoints.team_endpoints import new_team
+
+    monkeypatch.setattr(litellm, "default_team_params", None)
+    monkeypatch.setattr(litellm, "default_team_settings", None)
 
     # Create non-admin user with user_max_budget set to 100.0
     non_admin_user = UserAPIKeyAuth(
