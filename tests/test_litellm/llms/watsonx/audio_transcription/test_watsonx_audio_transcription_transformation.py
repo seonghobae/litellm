@@ -4,10 +4,9 @@ Tests for IBM WatsonX Audio Transcription.
 Validates that litellm.transcription transforms requests correctly for WatsonX.
 """
 
-import json
 import os
 import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -31,8 +30,6 @@ class TestWatsonXAudioTranscription:
         captured_request = {}
         from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
-        client = AsyncHTTPHandler()
-
         async def mock_post(*args, **kwargs):
             captured_request["url"] = str(kwargs.get("url", args[0] if args else None))
             captured_request["headers"] = kwargs.get("headers", {})
@@ -51,6 +48,7 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
@@ -63,6 +61,8 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         # Validate URL contains WatsonX audio transcription endpoint
         assert "/ml/v1/audio/transcriptions" in captured_request["url"]
@@ -98,8 +98,6 @@ class TestWatsonXAudioTranscription:
         captured_request = {}
         from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
-        client = AsyncHTTPHandler()
-
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
             captured_request["files"] = kwargs.get("files", {})
@@ -116,6 +114,7 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
@@ -130,12 +129,11 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         # Validate form data contains expected fields
         data = captured_request.get("data", {})
-
-        print("JSON DUMPS captured_request:")
-        print(json.dumps(captured_request, indent=4, default=str))
 
         # Model name should NOT have watsonx/ prefix
         assert data.get("model") == "whisper-large-v3-turbo"
@@ -164,8 +162,6 @@ class TestWatsonXAudioTranscription:
         captured_request = {}
         from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
-        client = AsyncHTTPHandler()
-
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
             captured_request["files"] = kwargs.get("files", {})
@@ -182,6 +178,7 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 # Minimal request - only required params
                 await litellm.atranscription(
@@ -195,6 +192,8 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         data = captured_request.get("data", {})
 
@@ -225,8 +224,6 @@ class TestWatsonXAudioTranscription:
         captured_request = {}
         from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 
-        client = AsyncHTTPHandler()
-
         async def mock_post(*args, **kwargs):
             captured_request["data"] = kwargs.get("data", {})
             captured_request["files"] = kwargs.get("files", {})
@@ -243,6 +240,7 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 # Minimal request - only required params
                 await litellm.atranscription(
@@ -256,6 +254,8 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         data = captured_request.get("data", {})
 
