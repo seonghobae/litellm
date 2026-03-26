@@ -157,8 +157,8 @@ def test_router_create_redis_cache_cluster_detection(startup_nodes, env_var, exp
     from litellm import Router
     import litellm
 
-    litellm.secret_manager_client = None
-    litellm._key_management_settings = None
+    monkeypatch.setattr(litellm, "secret_manager_client", None)
+    monkeypatch.setattr(litellm, "_key_management_settings", None)
 
     cache_config = dict(
         host="mockhost",
