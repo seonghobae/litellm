@@ -1371,6 +1371,7 @@ class AWSEventStreamDecoder:
     ) -> Tuple[
         Optional[ChatCompletionToolCallChunk],
         dict,
+        Optional[str],
         Optional[
             List[
                 Union[ChatCompletionThinkingBlock, ChatCompletionRedactedThinkingBlock]
@@ -1380,6 +1381,7 @@ class AWSEventStreamDecoder:
         """Handle 'start' event in converse chunk parsing."""
         tool_use: Optional[ChatCompletionToolCallChunk] = None
         provider_specific_fields: dict = {}
+        reasoning_content: Optional[str] = None
         thinking_blocks: Optional[
             List[
                 Union[ChatCompletionThinkingBlock, ChatCompletionRedactedThinkingBlock]
@@ -1426,7 +1428,10 @@ class AWSEventStreamDecoder:
                 provider_specific_fields = {
                     "reasoningContent": start_obj["reasoningContent"],
                 }
-        return tool_use, provider_specific_fields, thinking_blocks
+                reasoning_content = self.extract_reasoning_content_str(
+                    start_obj["reasoningContent"]
+                )
+        return tool_use, provider_specific_fields, reasoning_content, thinking_blocks
 
     def _handle_converse_delta_event(
         self,
@@ -1570,6 +1575,7 @@ class AWSEventStreamDecoder:
                 (
                     tool_use,
                     provider_specific_fields,
+                    reasoning_content,
                     thinking_blocks,
                 ) = self._handle_converse_start_event(start_obj)
             elif "delta" in chunk_data:
@@ -1717,7 +1723,7 @@ class AWSEventStreamDecoder:
     def _parse_message_from_event(self, event) -> Optional[str]:
         response_dict = event.to_response_dict()
         parsed_response = self.parser.parse(response_dict, get_response_stream_shape())
-
+        
         if response_dict["status_code"] != 200:
             decoded_body = response_dict["body"].decode()
             if isinstance(decoded_body, dict):
