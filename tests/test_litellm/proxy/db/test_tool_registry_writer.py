@@ -186,7 +186,7 @@ async def test_update_tool_policy_calls_upsert_then_get_tool():
     assert call_kw["where"] == {"tool_name": "my_tool"}
     assert call_kw["data"]["update"]["input_policy"] == "blocked"
     assert call_kw["data"]["update"]["updated_by"] == "admin"
-    prisma.db.litellm_tooltable.find_unique.assert_awaited_with(where={"tool_name": "my_tool"})
+    prisma.db.litellm_tooltable.find_unique.assert_awaited_once_with(where={"tool_name": "my_tool"})
 
 
 @pytest.mark.asyncio
@@ -277,3 +277,10 @@ async def test_tool_policy_registry_not_initialized_returns_untrusted():
     assert not registry.is_initialized()
     result = registry.get_effective_policies(["unknown_tool"])
     assert result == {"unknown_tool": "untrusted"}
+
+
+def test_get_tool_policy_registry_singleton():
+    """get_tool_policy_registry should return the same singleton instance across calls."""
+    registry1 = get_tool_policy_registry()
+    registry2 = get_tool_policy_registry()
+    assert registry1 is registry2
