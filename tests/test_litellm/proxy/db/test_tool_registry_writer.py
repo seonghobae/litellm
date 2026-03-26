@@ -279,8 +279,9 @@ async def test_tool_policy_registry_not_initialized_returns_untrusted():
     assert result == {"unknown_tool": "untrusted"}
 
 
-def test_get_tool_policy_registry_singleton():
+def test_get_tool_policy_registry_singleton(monkeypatch):
     """get_tool_policy_registry should return the same singleton instance across calls."""
+    monkeypatch.setattr("litellm.proxy.db.tool_registry_writer._tool_policy_registry", None)
     registry1 = get_tool_policy_registry()
     registry2 = get_tool_policy_registry()
     assert registry1 is registry2
