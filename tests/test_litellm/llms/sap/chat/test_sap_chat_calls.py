@@ -194,7 +194,10 @@ async def test_sap_chat_required_headers(
             if header_name in {"Authorization", "AI-Resource-Group"}:
                 assert request.headers[header_name]
                 if header_name == "Authorization":
-                    assert request.headers[header_name].startswith("Bearer ")
+                    parts = request.headers[header_name].split(" ")
+                    assert len(parts) == 2
+                    assert parts[0].lower() == "bearer"
+                    assert parts[1]
             else:
                 assert request.headers[header_name] == expected_value, (
                     f"Header '{header_name}' has incorrect value. "
