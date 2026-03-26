@@ -34,8 +34,12 @@ from litellm.types.mcp_server.mcp_server_manager import MCPOAuthMetadata, MCPSer
 
 
 def _reload_mcp_manager_module():
-    utils_module = sys.modules["litellm.proxy._experimental.mcp_server.utils"]
-    manager_module = sys.modules["litellm.proxy._experimental.mcp_server.mcp_server_manager"]
+    utils_module = sys.modules.get("litellm.proxy._experimental.mcp_server.utils") or importlib.import_module(
+        "litellm.proxy._experimental.mcp_server.utils"
+    )
+    manager_module = sys.modules.get(
+        "litellm.proxy._experimental.mcp_server.mcp_server_manager"
+    ) or importlib.import_module("litellm.proxy._experimental.mcp_server.mcp_server_manager")
     importlib.reload(utils_module)
     reloaded = importlib.reload(manager_module)
     # After reload, server.py still holds a stale reference to the old
@@ -241,10 +245,7 @@ class TestMCPServerManager:
             await manager.load_servers_from_config(config)
 
         # No warnings logged for the valid alias
-        assert all(
-            not (len(call.args) >= 5 and call.args[2] == "alias" and call.args[3] == "friendly_alias")
-            for call in mock_warning.call_args_list
-        )
+        mock_warning.assert_not_called()
 
         server = next(iter(manager.config_mcp_servers.values()))
         assert server.alias == "friendly_alias"
@@ -309,7 +310,11 @@ class TestMCPServerManager:
 
         # Mock get_allowed_mcp_servers to return our test servers
         manager.get_allowed_mcp_servers = AsyncMock(return_value=["github", "zapier"])
-        manager.get_mcp_server_by_id = MagicMock(side_effect=lambda x: server1 if x == "github" else server2)
+
+        def mock_get_server_by_id(server_id):
+            return {"github": server1, "zapier": server2}.get(server_id)
+
+        manager.get_mcp_server_by_id = MagicMock(side_effect=mock_get_server_by_id)
 
         # Mock _get_tools_from_server to return different results
         async def mock_get_tools_from_server(
