@@ -37,8 +37,9 @@ Click **+ Add New Plugin** to register a plugin in your marketplace.
 Enter the plugin information:
 
 - **Name**: Plugin identifier (kebab-case, e.g., `my-plugin`)
-- **Source Type**: Choose GitHub or URL
+- **Source Type**: Choose GitHub, Git URL, or Git Subdir
 - **Repository/URL**: The git source (e.g., `org/repo` for GitHub)
+- **Path**: Subdirectory path (required only for Git Subdir source)
 - **Version**: Semantic version (optional)
 - **Description**: What the plugin does
 - **Category**: Plugin category for organization
@@ -215,6 +216,22 @@ curl -X DELETE http://localhost:4000/claude-code/plugins/my-plugin \
 ```
 
 Use this format for GitLab, Bitbucket, or self-hosted git repositories.
+
+</TabItem>
+<TabItem value="git-subdir" label="Git Subdir">
+
+```json
+{
+  "name": "my-plugin",
+  "source": {
+    "source": "git-subdir",
+    "url": "https://github.com/org/repo.git",
+    "path": "plugins/my-plugin"
+  }
+}
+```
+
+Use this format when your plugin lives in a subdirectory of a git repository. The `path` field must be a relative path of slash-separated segments (alphanumeric, dots, hyphens, underscores only).
 
 </TabItem>
 </Tabs>

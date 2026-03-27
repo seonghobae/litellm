@@ -696,6 +696,32 @@ class LiteLLMResponsesTransformationHandler(CompletionTransformationBridge):
                             verbose_logger.debug(
                                 f"Chat provider:   image -> {converted}"
                             )
+                        elif item_type == "file":
+                            # Map Chat Completion file to Responses API input_file
+                            # {"type": "file", "file": {"file_data": "...", "filename": "..."}}
+                            # -> {"type": "input_file", "file_data": "...", "filename": "..."}
+                            file_data = item.get("file", {})
+                            converted = {"type": "input_file"}
+                            if isinstance(file_data, dict):
+                                for key in ["file_id", "file_url", "file_data", "filename"]:
+                                    if key in file_data:
+                                        converted[key] = file_data[key]
+                            elif isinstance(file_data, str):
+                                converted["file_id"] = file_data
+                            else:
+                                verbose_logger.warning(
+                                    f"Chat provider: file item has non-dict/str 'file' field: {type(file_data)}"
+                                )
+                                
+                            if any(k in converted for k in ["file_id", "file_url", "file_data"]):
+                                result.append(converted)
+                                verbose_logger.debug(
+                                    f"Chat provider:   file -> {converted}"
+                                )
+                            else:
+                                verbose_logger.warning(
+                                    f"Chat provider: Skipping incomplete file object: {item}"
+                                )
                         elif item_type in [
                             "input_text",
                             "input_image",
