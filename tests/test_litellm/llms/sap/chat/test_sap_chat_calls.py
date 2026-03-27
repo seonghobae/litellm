@@ -79,24 +79,25 @@ async def test_sap_chat(
     import litellm
 
     litellm.disable_aiohttp_transport = True
-    with patch(
-        "litellm.llms.sap.chat.transformation.GenAIHubOrchestrationConfig.deployment_url",
-        new_callable=PropertyMock,
-        return_value=fake_deployment_url,
-    ), patch(
-        "litellm.llms.sap.chat.transformation.get_token_creator",
-        return_value=fake_token_creator,
+    with (
+        patch(
+            "litellm.llms.sap.chat.transformation.GenAIHubOrchestrationConfig.deployment_url",
+            new_callable=PropertyMock,
+            return_value=fake_deployment_url,
+        ),
+        patch(
+            "litellm.llms.sap.chat.transformation.get_token_creator",
+            return_value=fake_token_creator,
+        ),
     ):
         model = "sap/gpt-4o"
         messages = [{"role": "user", "content": "Hello"}]
-        respx_mock.post(f"{fake_deployment_url}/v2/completion").respond(
-            json=sap_api_response
-        )
+        respx_mock.post(f"{fake_deployment_url}/v2/completion").respond(json=sap_api_response)
 
         if sync_mode:
             response = litellm.completion(model=model, messages=messages)
         else:
-            response = await litellm.acompletion(model=model, messages=messages)
+            response = await litellm.acompletion(model=model, messages=messages, caching=False)
 
         assert response.choices[0].message.content == "Hello from SAP!"
         assert response.model.startswith("gpt-4o")
@@ -113,13 +114,16 @@ async def test_sap_streaming(
     import litellm
 
     litellm.disable_aiohttp_transport = True
-    with patch(
-        "litellm.llms.sap.chat.transformation.GenAIHubOrchestrationConfig.deployment_url",
-        new_callable=PropertyMock,
-        return_value=fake_deployment_url,
-    ), patch(
-        "litellm.llms.sap.chat.transformation.get_token_creator",
-        return_value=fake_token_creator,
+    with (
+        patch(
+            "litellm.llms.sap.chat.transformation.GenAIHubOrchestrationConfig.deployment_url",
+            new_callable=PropertyMock,
+            return_value=fake_deployment_url,
+        ),
+        patch(
+            "litellm.llms.sap.chat.transformation.get_token_creator",
+            return_value=fake_token_creator,
+        ),
     ):
         model = "sap/gpt-4o"
         messages = [{"role": "user", "content": "Hello"}]
@@ -161,13 +165,16 @@ async def test_sap_chat_required_headers(
     }
 
     litellm.disable_aiohttp_transport = True
-    with patch(
-        "litellm.llms.sap.chat.transformation.GenAIHubOrchestrationConfig.deployment_url",
-        new_callable=PropertyMock,
-        return_value=fake_deployment_url,
-    ), patch(
-        "litellm.llms.sap.chat.transformation.get_token_creator",
-        return_value=fake_token_creator,
+    with (
+        patch(
+            "litellm.llms.sap.chat.transformation.GenAIHubOrchestrationConfig.deployment_url",
+            new_callable=PropertyMock,
+            return_value=fake_deployment_url,
+        ),
+        patch(
+            "litellm.llms.sap.chat.transformation.get_token_creator",
+            return_value=fake_token_creator,
+        ),
     ):
         model = "sap/gpt-4o"
         messages = [{"role": "user", "content": "Hello"}]
@@ -176,7 +183,7 @@ async def test_sap_chat_required_headers(
         route = respx_mock.post(f"{fake_deployment_url}/v2/completion")
         route.respond(json=sap_api_response)
 
-        response = await litellm.acompletion(model=model, messages=messages)
+        response = await litellm.acompletion(model=model, messages=messages, caching=False)
 
         # Verify the response is valid
         assert response.choices[0].message.content == "Hello from SAP!"
@@ -188,13 +195,15 @@ async def test_sap_chat_required_headers(
         request = route.calls[0].request
         for header_name, expected_value in required_headers.items():
             assert header_name in request.headers, (
-                f"Required header '{header_name}' missing from request. "
-                f"Found headers: {list(request.headers.keys())}"
+                f"Required header '{header_name}' missing from request. Found headers: {list(request.headers.keys())}"
             )
             if header_name in {"Authorization", "AI-Resource-Group"}:
-                assert request.headers[header_name]
+                assert request.headers[header_name].strip()
                 if header_name == "Authorization":
-                    assert request.headers[header_name].startswith("Bearer ")
+                    parts = request.headers[header_name].strip().split(None, 1)
+                    assert len(parts) == 2
+                    assert parts[0].lower() == "bearer"
+                    assert parts[1].strip(), "Authorization token must not be empty"
             else:
                 assert request.headers[header_name] == expected_value, (
                     f"Header '{header_name}' has incorrect value. "
