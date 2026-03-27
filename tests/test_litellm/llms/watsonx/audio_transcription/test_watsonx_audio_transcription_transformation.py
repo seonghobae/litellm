@@ -4,16 +4,16 @@ Tests for IBM WatsonX Audio Transcription.
 Validates that litellm.transcription transforms requests correctly for WatsonX.
 """
 
-import json
 import os
 import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 sys.path.insert(0, os.path.abspath("../../../../.."))
 
 import litellm
+from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 from litellm.llms.watsonx.audio_transcription.transformation import (
     IBMWatsonXAudioTranscriptionConfig,
 )
@@ -48,10 +48,12 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     project_id="test-project-123",
@@ -59,6 +61,8 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         # Validate URL contains WatsonX audio transcription endpoint
         assert "/ml/v1/audio/transcriptions" in captured_request["url"]
@@ -68,9 +72,7 @@ class TestWatsonXAudioTranscription:
 
         # Validate headers contain WatsonX auth
         assert "Authorization" in captured_request["headers"]
-        assert (
-            "Bearer test-bearer-token" in captured_request["headers"]["Authorization"]
-        )
+        assert "Bearer test-bearer-token" in captured_request["headers"]["Authorization"]
 
         # Validate Content-Type is NOT set (httpx sets multipart/form-data automatically)
         assert "Content-Type" not in captured_request["headers"]
@@ -111,10 +113,12 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     project_id="test-project-123",
@@ -124,12 +128,11 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         # Validate form data contains expected fields
         data = captured_request.get("data", {})
-
-        print("JSON DUMPS captured_request:")
-        print(json.dumps(captured_request, indent=4, default=str))
 
         # Model name should NOT have watsonx/ prefix
         assert data.get("model") == "whisper-large-v3-turbo"
@@ -146,9 +149,7 @@ class TestWatsonXAudioTranscription:
         # Validate file is in files dict (multipart/form-data)
         files = captured_request.get("files", {})
         assert "file" in files
-        assert isinstance(
-            files["file"], tuple
-        )  # Should be (filename, content, content_type)
+        assert isinstance(files["file"], tuple)  # Should be (filename, content, content_type)
 
     @pytest.mark.asyncio
     async def test_watsonx_transcription_only_user_params_sent_with_project_id(self):
@@ -175,11 +176,13 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 # Minimal request - only required params
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     project_id="test-project-123",
@@ -187,6 +190,8 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         data = captured_request.get("data", {})
 
@@ -201,9 +206,7 @@ class TestWatsonXAudioTranscription:
         )
 
         # Specifically verify response_format is NOT added
-        assert (
-            "response_format" not in data
-        ), "response_format should NOT be added by default"
+        assert "response_format" not in data, "response_format should NOT be added by default"
 
         # Verify file is sent separately
         files = captured_request.get("files", {})
@@ -234,11 +237,13 @@ class TestWatsonXAudioTranscription:
             "litellm.llms.custom_httpx.http_handler.AsyncHTTPHandler.post",
             new=mock_post,
         ):
+            client = AsyncHTTPHandler()
             try:
                 # Minimal request - only required params
                 await litellm.atranscription(
                     model="watsonx/whisper-large-v3-turbo",
                     file=b"fake_audio_data",
+                    client=client,
                     api_base="https://us-south.ml.cloud.ibm.com",
                     api_key="test-api-key",
                     space_id="test-space_id-123",
@@ -246,6 +251,8 @@ class TestWatsonXAudioTranscription:
                 )
             except Exception:
                 pass  # We just want to capture the request
+            finally:
+                await client.close()
 
         data = captured_request.get("data", {})
 
@@ -260,9 +267,7 @@ class TestWatsonXAudioTranscription:
         )
 
         # Specifically verify response_format is NOT added
-        assert (
-            "response_format" not in data
-        ), "response_format should NOT be added by default"
+        assert "response_format" not in data, "response_format should NOT be added by default"
 
         # Verify file is sent separately
         files = captured_request.get("files", {})
@@ -286,7 +291,9 @@ class TestWatsonXAudioTranscription:
             "model": "whisper-large-v3-turbo",  # This field should be removed
             "duration": 5.5,
         }
-        mock_response.text = '{"text": "Hello, this is a test transcription.", "model": "whisper-large-v3-turbo", "duration": 5.5}'
+        mock_response.text = (
+            '{"text": "Hello, this is a test transcription.", "model": "whisper-large-v3-turbo", "duration": 5.5}'
+        )
 
         # This should not raise a TypeError - model field should be removed
         result = handler.transform_audio_transcription_response(mock_response)
@@ -324,9 +331,7 @@ class TestWatsonXAudioTranscription:
             "text": "Hello, this is a test transcription.",
             "duration": 5.5,
         }
-        mock_response.text = (
-            '{"text": "Hello, this is a test transcription.", "duration": 5.5}'
-        )
+        mock_response.text = '{"text": "Hello, this is a test transcription.", "duration": 5.5}'
 
         result = handler.transform_audio_transcription_response(mock_response)
 
