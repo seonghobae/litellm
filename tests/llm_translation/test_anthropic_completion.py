@@ -18,6 +18,9 @@ import os
 os.environ["ANTHROPIC_API_KEY"] = "mock-key"
 
 sys.path.insert(0, os.path.abspath("../.."))  # Adds the parent directory to the system path
+import responses
+import json
+
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -1530,37 +1533,54 @@ def test_just_system_message():
     ["anthropic/claude-3-sonnet-20240229", "anthropic/claude-3-opus-20240229"],
 )
 @pytest.mark.asyncio()
-async def test_anthropic_api_max_completion_tokens(model: str):
+async def test_anthropic_api_max_completion_tokens(model: str, respx_mock):
     """
     Tests that:
     - max_completion_tokens is passed as max_tokens to anthropic models
     """
     litellm.set_verbose = True
-    from litellm.llms.custom_httpx.http_handler import HTTPHandler
 
+    # Mock the anthropic API call
+    import httpx
+    import json
+    mock_route = respx_mock.post(url__regex=r".*api\.anthropic\.com/v1/messages.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": "msg_01XFDUDYJgAACzvnptvVoYEX",
+                "type": "message",
+                "role": "assistant",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Hello there"
+                    }
+                ],
+                "model": model,
+                "stop_reason": "end_turn",
+                "stop_sequence": None,
+                "usage": {
+                    "input_tokens": 9,
+                    "output_tokens": 12
+                }
+            }
+        )
+    )
 
-    client = HTTPHandler()
+    await litellm.acompletion(
+        model=model,
+        max_completion_tokens=10,
+        messages=[{"role": "user", "content": "Hello!"}],
+    )
 
+    assert mock_route.called
+    request_body = json.loads(mock_route.calls[0].request.content)
 
-    with patch.object(client, "post") as mock_client:
-        try:
-            await litellm.acompletion(
-                model=model,
-                max_completion_tokens=10,
-                messages=[{"role": "user", "content": "Hello!"}],
-                client=client,
-            )
-        except Exception:
-            pass
-        mock_client.assert_called_once()
-        request_body = mock_client.call_args.kwargs["json"]
-
-
-        assert request_body == {
-            "messages": [{"role": "user", "content": [{"type": "text", "text": "Hello!"}]}],
-            "max_tokens": 10,
-            "model": model.split("/")[-1],
-        }
+    assert request_body == {
+        "messages": [{"role": "user", "content": [{"type": "text", "text": "Hello!"}]}],
+        "max_tokens": 10,
+        "model": model.split("/")[-1],
+    }
 
 
 @pytest.mark.parametrize(
