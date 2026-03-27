@@ -12,10 +12,10 @@ import os
 import sys
 import pytest
 
-sys.path.insert(
-    0, os.path.abspath("../..")
-)  # Adds the parent directory to the system path
-import asyncio
+TEST_LITELLM_DIR = os.path.dirname(__file__)
+REPO_ROOT = os.path.abspath(os.path.join(TEST_LITELLM_DIR, "../.."))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
 
 import litellm
 
@@ -34,29 +34,35 @@ def isolate_litellm_state():
     but adds overhead. Consider removing reload entirely if tests can work without it.
     """
     # Get worker ID if running with pytest-xdist
-    worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'master')
+    os.environ.get("PYTEST_XDIST_WORKER", "master")
 
     # Store original callback state (all callback lists)
     original_state = {}
-    if hasattr(litellm, 'callbacks'):
-        original_state['callbacks'] = litellm.callbacks.copy() if litellm.callbacks else []
-    if hasattr(litellm, 'success_callback'):
-        original_state['success_callback'] = litellm.success_callback.copy() if litellm.success_callback else []
-    if hasattr(litellm, 'failure_callback'):
-        original_state['failure_callback'] = litellm.failure_callback.copy() if litellm.failure_callback else []
-    if hasattr(litellm, '_async_success_callback'):
-        original_state['_async_success_callback'] = litellm._async_success_callback.copy() if litellm._async_success_callback else []
-    if hasattr(litellm, '_async_failure_callback'):
-        original_state['_async_failure_callback'] = litellm._async_failure_callback.copy() if litellm._async_failure_callback else []
+    if hasattr(litellm, "callbacks"):
+        original_state["callbacks"] = litellm.callbacks.copy() if litellm.callbacks else []
+    if hasattr(litellm, "success_callback"):
+        original_state["success_callback"] = litellm.success_callback.copy() if litellm.success_callback else []
+    if hasattr(litellm, "failure_callback"):
+        original_state["failure_callback"] = litellm.failure_callback.copy() if litellm.failure_callback else []
+    if hasattr(litellm, "_async_success_callback"):
+        original_state["_async_success_callback"] = (
+            litellm._async_success_callback.copy() if litellm._async_success_callback else []
+        )
+    if hasattr(litellm, "_async_failure_callback"):
+        original_state["_async_failure_callback"] = (
+            litellm._async_failure_callback.copy() if litellm._async_failure_callback else []
+        )
 
     # Store routing globals — leaked model_fallbacks causes tests to route
     # through async_completion_with_fallbacks / Router, bypassing HTTP mocks
-    if hasattr(litellm, 'model_fallbacks'):
-        original_state['model_fallbacks'] = litellm.model_fallbacks
+    if hasattr(litellm, "model_fallbacks"):
+        original_state["model_fallbacks"] = litellm.model_fallbacks
+    if hasattr(litellm, "drop_params"):
+        original_state["drop_params"] = litellm.drop_params
 
     # Store transport/network globals — many tests set these without restoring,
     # causing subsequent tests to get None from _create_async_transport()
-    for _attr in ('disable_aiohttp_transport', 'force_ipv4'):
+    for _attr in ("disable_aiohttp_transport", "force_ipv4"):
         if hasattr(litellm, _attr):
             original_state[_attr] = getattr(litellm, _attr)
 
@@ -65,20 +71,22 @@ def isolate_litellm_state():
         litellm.in_memory_llm_clients_cache.flush_cache()
 
     # Clear all callback lists to prevent cross-test contamination
-    if hasattr(litellm, 'callbacks'):
+    if hasattr(litellm, "callbacks"):
         litellm.callbacks = []
-    if hasattr(litellm, 'success_callback'):
+    if hasattr(litellm, "success_callback"):
         litellm.success_callback = []
-    if hasattr(litellm, 'failure_callback'):
+    if hasattr(litellm, "failure_callback"):
         litellm.failure_callback = []
-    if hasattr(litellm, '_async_success_callback'):
+    if hasattr(litellm, "_async_success_callback"):
         litellm._async_success_callback = []
-    if hasattr(litellm, '_async_failure_callback'):
+    if hasattr(litellm, "_async_failure_callback"):
         litellm._async_failure_callback = []
 
     # Clear routing globals
-    if hasattr(litellm, 'model_fallbacks'):
+    if hasattr(litellm, "model_fallbacks"):
         litellm.model_fallbacks = None
+    if hasattr(litellm, "drop_params"):
+        litellm.drop_params = False
 
     yield
 
@@ -100,14 +108,13 @@ def setup_and_teardown():
     Use this sparingly - most state should be handled by isolate_litellm_state.
     Only reload modules here if absolutely necessary.
     """
-    sys.path.insert(
-        0, os.path.abspath("../..")
-    )
+    if REPO_ROOT not in sys.path:
+        sys.path.insert(0, REPO_ROOT)
 
     import litellm
 
     # Only reload if NOT running in parallel (module reload + parallel = bad)
-    worker_id = os.environ.get('PYTEST_XDIST_WORKER', None)
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", None)
     if worker_id is None:
         # Single process mode - safe to reload
         importlib.reload(litellm)
@@ -115,20 +122,19 @@ def setup_and_teardown():
         try:
             if hasattr(litellm, "proxy") and hasattr(litellm.proxy, "proxy_server"):
                 import litellm.proxy.proxy_server
+
                 importlib.reload(litellm.proxy.proxy_server)
-        except Exception as e:
-            print(f"Error reloading litellm.proxy.proxy_server: {e}")
+        except Exception:
+            pass
 
         # Flush cache after reload (prevents stale client instances)
         if hasattr(litellm, "in_memory_llm_clients_cache"):
             litellm.in_memory_llm_clients_cache.flush_cache()
 
-    print(f"[conftest] Module setup complete (worker: {worker_id or 'master'})")
 
     yield
 
     # Teardown - no need to manually manage event loops with pytest-asyncio auto mode
-    print(f"[conftest] Module teardown complete (worker: {worker_id or 'master'})")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -139,23 +145,15 @@ def pytest_collection_modifyitems(config, items):
     - Sort custom_logger tests first (they tend to interfere with other tests)
     """
     # Separate no_parallel tests
-    no_parallel_tests = [
-        item for item in items
-        if any(mark.name == "no_parallel" for mark in item.iter_markers())
-    ]
+    no_parallel_tests = [item for item in items if any(mark.name == "no_parallel" for mark in item.iter_markers())]
 
     # Separate custom_logger tests
     custom_logger_tests = [
-        item for item in items
-        if "custom_logger" in item.parent.name
-        and item not in no_parallel_tests
+        item for item in items if "custom_logger" in item.parent.name and item not in no_parallel_tests
     ]
 
     # Everything else
-    other_tests = [
-        item for item in items
-        if item not in no_parallel_tests and item not in custom_logger_tests
-    ]
+    other_tests = [item for item in items if item not in no_parallel_tests and item not in custom_logger_tests]
 
     # Sort each group
     custom_logger_tests.sort(key=lambda x: x.name)
@@ -171,14 +169,12 @@ def pytest_configure(config):
     Configure pytest with custom settings.
     """
     # Add marker for flaky tests (for documentation purposes)
-    config.addinivalue_line(
-        "markers", "flaky: mark test as potentially flaky (should use --reruns)"
-    )
+    config.addinivalue_line("markers", "flaky: mark test as potentially flaky (should use --reruns)")
 
     # Detect if running in CI
-    is_ci = os.environ.get('CI') == 'true' or os.environ.get('LITELLM_CI') == 'true'
+    is_ci = os.environ.get("CI") == "true" or os.environ.get("LITELLM_CI") == "true"
     if is_ci:
-        print("[conftest] Running in CI mode - enabling stricter test isolation")
+        pass
 
 
 # Optional: Add a fixture for tests that need even stricter isolation

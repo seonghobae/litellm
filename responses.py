@@ -1,0 +1,159 @@
+from __future__ import annotations
+
+import json
+import threading
+from collections.abc import Iterator, Sequence
+from functools import wraps
+from typing import Any
+from unittest.mock import patch
+
+import requests
+
+GET = "GET"
+POST = "POST"
+PUT = "PUT"
+PATCH = "PATCH"
+DELETE = "DELETE"
+
+
+class _Call:
+    def __init__(self, request: requests.PreparedRequest):
+        self.request = request
+
+
+class _Calls(Sequence[_Call]):
+    def __len__(self) -> int:
+        return len(_get_active_mock().calls)
+
+    def __getitem__(self, index: int) -> _Call:
+        return _get_active_mock().calls[index]
+
+    def __iter__(self) -> Iterator[_Call]:
+        return iter(_get_active_mock().calls)
+
+
+class _RegisteredResponse:
+    def __init__(self, method: str, url: str, **kwargs: Any):
+        self.method = method.upper()
+        self.url = requests.Request(method=self.method, url=url).prepare().url
+        self.status_code = kwargs.pop("status", kwargs.pop("status_code", 200))
+        self.json_body = kwargs.pop("json", None)
+        self.body = kwargs.pop("body", None)
+        self.headers = kwargs.pop("headers", None) or {}
+        if kwargs:
+            raise TypeError(f"Unsupported responses kwargs: {sorted(kwargs)}")
+
+
+class RequestsMock:
+    def __init__(self) -> None:
+        self._registered: list[_RegisteredResponse] = []
+        self.calls: list[_Call] = []
+        self._patchers: list[patch] = []
+
+    def __enter__(self) -> "RequestsMock":
+        _get_active_mocks_list().append(self)
+        self._patchers = [
+            patch.object(requests.sessions.Session, "request", new=self._request),
+            patch.object(requests.sessions.Session, "send", new=self._send),
+        ]
+        for patcher in self._patchers:
+            patcher.start()
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        while self._patchers:
+            self._patchers.pop().stop()
+        _get_active_mocks_list().pop()
+
+    def add(self, method: str, url: str, **kwargs: Any) -> None:
+        self._registered.append(_RegisteredResponse(method, url, **kwargs))
+
+    def register_uri(self, method: str, url: str, **kwargs: Any) -> None:
+        self.add(method, url, **kwargs)
+
+    def _request(
+        self,
+        method: str,
+        url: str,
+        **kwargs: Any,
+    ) -> requests.Response:
+        request = requests.Request(
+            method=method,
+            url=url,
+            headers=kwargs.get("headers"),
+            files=kwargs.get("files"),
+            data=kwargs.get("data"),
+            params=kwargs.get("params"),
+            auth=kwargs.get("auth"),
+            cookies=kwargs.get("cookies"),
+            hooks=kwargs.get("hooks"),
+            json=kwargs.get("json"),
+        ).prepare()
+
+        return self._build_response(request)
+
+    def _send(
+        self,
+        request: requests.PreparedRequest,
+        **kwargs: Any,
+    ) -> requests.Response:
+        return self._build_response(request)
+
+    def _build_response(self, request: requests.PreparedRequest) -> requests.Response:
+        registered = self._match(request.method, request.url)
+        self.calls.append(_Call(request))
+
+        response = requests.Response()
+        response.status_code = registered.status_code
+        response.request = request
+        response.url = request.url
+        response.headers.update(registered.headers)
+
+        if registered.json_body is not None:
+            response.headers.setdefault("Content-Type", "application/json")
+            response._content = json.dumps(registered.json_body).encode("utf-8")
+        elif registered.body is not None:
+            body = registered.body
+            response._content = body if isinstance(body, bytes) else str(body).encode("utf-8")
+        else:
+            response._content = b""
+
+        return response
+
+    def _match(self, method: str, url: str) -> _RegisteredResponse:
+        for registered in self._registered:
+            if registered.method == method.upper() and registered.url == url:
+                return registered
+        raise AssertionError(f"No mocked response for {method} {url}")
+
+
+_local = threading.local()
+
+
+def _get_active_mocks_list() -> list[RequestsMock]:
+    if not hasattr(_local, "active_mocks"):
+        _local.active_mocks = []
+    return _local.active_mocks
+
+
+calls = _Calls()
+
+
+def _get_active_mock() -> RequestsMock:
+    active_mocks = _get_active_mocks_list()
+    if not active_mocks:
+        raise RuntimeError("responses mock is not active")
+    return active_mocks[-1]
+
+
+def add(method: str, url: str, **kwargs: Any) -> None:
+    _get_active_mock().add(method, url, **kwargs)
+
+
+def activate(func):
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any):
+        with RequestsMock():
+            return func(*args, **kwargs)
+
+    return wrapper
