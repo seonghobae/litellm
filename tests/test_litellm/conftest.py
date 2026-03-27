@@ -16,7 +16,6 @@ TEST_LITELLM_DIR = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(os.path.join(TEST_LITELLM_DIR, "../.."))
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
-import asyncio
 
 import litellm
 
@@ -35,7 +34,7 @@ def isolate_litellm_state():
     but adds overhead. Consider removing reload entirely if tests can work without it.
     """
     # Get worker ID if running with pytest-xdist
-    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "master")
+    os.environ.get("PYTEST_XDIST_WORKER", "master")
 
     # Store original callback state (all callback lists)
     original_state = {}
@@ -109,7 +108,8 @@ def setup_and_teardown():
     Use this sparingly - most state should be handled by isolate_litellm_state.
     Only reload modules here if absolutely necessary.
     """
-    sys.path.insert(0, os.path.abspath("../.."))
+    if REPO_ROOT not in sys.path:
+        sys.path.insert(0, REPO_ROOT)
 
     import litellm
 
@@ -124,19 +124,17 @@ def setup_and_teardown():
                 import litellm.proxy.proxy_server
 
                 importlib.reload(litellm.proxy.proxy_server)
-        except Exception as e:
-            print(f"Error reloading litellm.proxy.proxy_server: {e}")
+        except Exception:
+            pass
 
         # Flush cache after reload (prevents stale client instances)
         if hasattr(litellm, "in_memory_llm_clients_cache"):
             litellm.in_memory_llm_clients_cache.flush_cache()
 
-    print(f"[conftest] Module setup complete (worker: {worker_id or 'master'})")
 
     yield
 
     # Teardown - no need to manually manage event loops with pytest-asyncio auto mode
-    print(f"[conftest] Module teardown complete (worker: {worker_id or 'master'})")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -176,7 +174,7 @@ def pytest_configure(config):
     # Detect if running in CI
     is_ci = os.environ.get("CI") == "true" or os.environ.get("LITELLM_CI") == "true"
     if is_ci:
-        print("[conftest] Running in CI mode - enabling stricter test isolation")
+        pass
 
 
 # Optional: Add a fixture for tests that need even stricter isolation
