@@ -1,0 +1,47 @@
+name: Strix Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  strix-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Run Strix security scan
+        env:
+          STRIX_API_KEY: ${{ secrets.STRIX_API_KEY }}
+        run: |
+          if [ -n "$STRIX_API_KEY" ]; then
+            pip install 'strix-agent==0.8.3'
+            strix --target .
+          else
+            echo "STRIX_API_KEY not set, skipping Strix security scan"
+          fi
+
+      - name: Upload Strix report
+        if: always() && hashFiles('strix_runs/**') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: strix-report
+          path: strix_runs/
