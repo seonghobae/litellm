@@ -23,20 +23,25 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-        with:
-          python-version: "3.12"
-
-      - name: Run Strix security scan
+      - name: Install Strix
         env:
-          STRIX_API_KEY: ${{ secrets.STRIX_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: |
-          if [ -n "$STRIX_API_KEY" ]; then
-            pip install 'strix-agent==0.8.3'
-            strix --target .
+          if [ -n "$LLM_API_KEY" ]; then
+            curl -sSL https://strix.ai/install | bash
           else
-            echo "STRIX_API_KEY not set, skipping Strix security scan"
+            echo "LLM_API_KEY not set, skipping Strix install"
+          fi
+
+      - name: Run Strix
+        env:
+          STRIX_LLM: ${{ secrets.STRIX_LLM }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+        run: |
+          if [ -n "$LLM_API_KEY" ]; then
+            strix -n -t ./ --scan-mode quick
+          else
+            echo "LLM_API_KEY not set, skipping Strix security scan"
           fi
 
       - name: Upload Strix report
