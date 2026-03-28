@@ -28,8 +28,7 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: |
           if [ -n "$LLM_API_KEY" ]; then
-            curl -sSL https://strix.ai/install | bash
-            pip install google-cloud-aiplatform
+            pip install 'strix-agent[vertex]'
           else
             echo "LLM_API_KEY not set, skipping Strix install"
           fi
